@@ -1,33 +1,36 @@
-from flask import Flask, request, jsonify
-import subprocess
-import os
+from fastapi import FastAPI
+from pydantic import BaseModel
+from app.utils.state_manager import load_state, save_state
+from app.buy import execute_buy
+from app.sell import execute_sell
 
-app = Flask(__name__)
+app = FastAPI()
+state = load_state()
 
-# 앱 루트 확인용
-@app.route("/", methods=["GET"])
-def index():
-    return jsonify({"status": "Flask server is running"})
+class TradeSignal(BaseModel):
+    symbol: str
+    action: str  # "BUY" or "SELL"
 
-# 웹훅 처리 엔드포인트
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.json
-    symbol = data.get("symbol")
-    action = data.get("action")
+@app.post("/webhook")
+async def webhook(signal: TradeSignal):
+    symbol = signal.symbol.upper()
+    action = signal.action.upper()
 
-    if not symbol or not action:
-        return jsonify({"error": "symbol or action missing"}), 400
+    if symbol not in state:
+        state[symbol] = {"holding": False}
 
-    script_dir = os.path.join(os.path.dirname(__file__), "app")
-    try:
-        if action.upper() == "BUY":
-            subprocess.Popen(["python3", "buy.py", symbol], cwd=script_dir)
-        elif action.upper() == "SELL":
-            subprocess.Popen(["python3", "sell.py", symbol], cwd=script_dir)
-        else:
-            return jsonify({"error": "Invalid action"}), 400
+    if action == "BUY":
+        if state[symbol]["holding"]:
+            return {"status": "Already holding"}
+        execute_buy(symbol)
+        state[symbol]["holding"] = True
+    elif action == "SELL":
+        if not state[symbol]["holding"]:
+            return {"status": "No position to sell"}
+        execute_sell(symbol)
+        state[symbol]["holding"] = False
+    else:
+        return {"error": "Invalid action"}
 
-        return jsonify({"status": "success", "symbol": symbol, "action": action})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    save_state(state)
+    return {"status": f"{action} executed for {symbol}"}

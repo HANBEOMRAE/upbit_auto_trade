@@ -1,3 +1,5 @@
 pyupbit
 flask
 python-dotenv
+requests
+pandas
