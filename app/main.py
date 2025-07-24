@@ -7,6 +7,11 @@ from app.sell import execute_sell
 app = FastAPI()
 state = load_state()
 
+# ✅ 루트 확인용 엔드포인트
+@app.get("/")
+async def root():
+    return {"message": "Upbit Auto Trade Server is running"}
+
 class TradeSignal(BaseModel):
     symbol: str
     action: str  # "BUY" or "SELL"
@@ -19,22 +24,7 @@ async def webhook(signal: TradeSignal):
     if symbol not in state:
         state[symbol] = {
             "holding": False,
-            "entry_price": 0.0,
-            "capital": 1_000_000
+            "entry_price": 0.0
         }
 
-    if action == "BUY":
-        if state[symbol]["holding"]:
-            return {"status": "Already holding"}
-        execute_buy(symbol)
-
-    elif action == "SELL":
-        if not state[symbol]["holding"]:
-            return {"status": "No position to sell"}
-        execute_sell(symbol)
-
-    else:
-        return {"error": "Invalid action"}
-
-    save_state(state)
-    return {"status": f"{action} executed for {symbol}"}
+    # ... 이후 매수/매도 로직
