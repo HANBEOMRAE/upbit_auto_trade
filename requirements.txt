@@ -1,5 +1,6 @@
 pyupbit
-flask
+fastapi
+uvicorn
 python-dotenv
 requests
 pandas

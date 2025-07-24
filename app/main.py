@@ -17,18 +17,22 @@ async def webhook(signal: TradeSignal):
     action = signal.action.upper()
 
     if symbol not in state:
-        state[symbol] = {"holding": False}
+        state[symbol] = {
+            "holding": False,
+            "entry_price": 0.0,
+            "capital": 1_000_000
+        }
 
     if action == "BUY":
         if state[symbol]["holding"]:
             return {"status": "Already holding"}
         execute_buy(symbol)
-        state[symbol]["holding"] = True
+
     elif action == "SELL":
         if not state[symbol]["holding"]:
             return {"status": "No position to sell"}
         execute_sell(symbol)
-        state[symbol]["holding"] = False
+
     else:
         return {"error": "Invalid action"}
 
