@@ -1,5 +1,4 @@
 # app/routers/webhook.py
-
 from fastapi import APIRouter, Request
 from app.services import buy, sell
 
@@ -18,10 +17,10 @@ async def webhook(request: Request):
 
     if action == "BUY":
         result = buy.execute_buy(symbol)
-        return {"message": f"Buy executed for {symbol}", "result": result}
+        return result  # ✅ 그대로 반환 (skipped_error 등 클라이언트가 그대로 확인 가능)
     
     elif action == "SELL":
         result = sell.execute_sell_all(symbol)
-        return {"message": f"Sell executed for {symbol}", "result": result}
+        return result
     
     return {"error": "Invalid action"}
